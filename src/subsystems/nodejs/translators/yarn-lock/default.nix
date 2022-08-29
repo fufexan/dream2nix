@@ -311,10 +311,20 @@
               version = l.last split;
             }
             else let
-              depYarnKey = "${name}@${semVer}";
+              depYarnKey =
+                l.trace "depYarnKey: ${name}@${semVer}"
+                "${name}@${semVer}";
               version =
                 if ! yarnLock ? "${depYarnKey}"
                 then throw "Cannot find entry for top level dependency: '${depYarnKey}'"
+                else if l.hasInfix "@git+" depYarnKey
+                then
+                  let
+                    split = l.splitString "@git+" depYarnKey;
+                    gitUrl = l.last split;
+                  in
+                    l.strings.sanitizeDerivationName
+                    "${yarnLock."${depYarnKey}".version}@git+${gitUrl}"
                 else yarnLock."${depYarnKey}".version;
             in {inherit name version;})
           packageJsonDeps;
